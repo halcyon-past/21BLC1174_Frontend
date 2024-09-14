@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "21BLC1174 Aritro Saha",
   description: "Frontend Assignment for Trademarkia",
   icons: {
-    icon: '/favicon.ico',
+    icon: './favicon.ico',
   },
 };
 
