@@ -121,7 +121,7 @@ export default function Home() {
     });
   };
 
-  const fetchSearchResults = async (query: string) => {
+  const fetchSearchResults = async (query:string,  owners: string[]=[], lawFirms: string[]=[], attorneys: string[]=[]) => {
     const requestData = JSON.stringify({
       "input_query": query,
       "input_query_type": "",
@@ -129,9 +129,9 @@ export default function Home() {
       "status": [],
       "exact_match": false,
       "date_query": false,
-      "owners": [],
-      "attorneys": [],
-      "law_firms": [],
+      "owners": owners,
+      "attorneys": attorneys,
+      "law_firms": lawFirms,
       "mark_description_description": [],
       "classes": [],
       "page": 1,
@@ -165,6 +165,14 @@ export default function Home() {
       return { body: { hits: { hits: [] } } };
     }
   };
+
+  useEffect(() => {
+    const owners = listData.Owners.filter(owner => owner.checked).map(owner => owner.name);
+    const lawFirms = listData['Law Firms'].filter(firm => firm.checked).map(firm => firm.name);
+    const attorneys = listData.Attorneys.filter(attorney => attorney.checked).map(attorney => attorney.name);
+    
+    fetchSearchResults(searchQuery, owners, lawFirms, attorneys);
+  }, [listData]);
 
   const updateListData = (responseData: ApiResponse['body']) => {
     console.log('API Response:', responseData);
@@ -235,6 +243,7 @@ export default function Home() {
   }, [selectedResult, data]);
 
   const suggestion1 = async () =>{
+    notify("success");
     if (searchQuery.length > 2) {
       const results = await fetchSearchResults(searchQuery+"*");
       if (results) {
@@ -245,6 +254,7 @@ export default function Home() {
   }
 
   const suggestion2 = async () =>{
+    notify("success");
     if (searchQuery.length > 2) {
       const results = await fetchSearchResults("*"+searchQuery);
       if (results) {
