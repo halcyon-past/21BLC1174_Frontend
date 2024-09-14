@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import logo from "./assets/logo.svg"
-import { AlertCircle, Search, Check } from 'lucide-react';
+import { Search, Check } from 'lucide-react';
 import React, { useState } from 'react';
 import data from '../utils/dummyData'
 
@@ -19,6 +19,8 @@ interface SearchResult {
     current_owner: string;
     registration_number: string;
     registration_date: number;
+    status_date: number;
+    renewal_date: number;
     status_code: number;
     status_type: string;
     mark_description_description: string[];
@@ -27,7 +29,7 @@ interface SearchResult {
 }
 
 interface RowSource {
-  registration_date: number; // Unix timestamp in seconds
+  registration_date: number;
 }
 
 type ListData = {
@@ -87,6 +89,7 @@ export default function Home() {
         hit._source.mark_identification.toLowerCase().includes(query.toLowerCase())
       );
       setSearchResults(results);
+      console.log(results);
     } else {
       setSearchResults([]);
     }
@@ -174,7 +177,7 @@ export default function Home() {
       {/*Navbar*/}
       <div className="nav bg-[#F8FAFE] h-28 w-full flex justify-start pl-16 items-center border-solid border-b-8 border-blue-100">
         <Image src={logo} className="logo" alt="logo w-24" />
-        <div className="search ml-14 w-[500px] h-[50px] flex justify-start items-center rounded-md border-solid border-2 border-gray-300 bg-white text-gray-500">
+        <div className="search ml-14 w-[500px] h-[50px] flex justify-start items-center rounded-md border-solid border-2 border-gray-300 bg-white text-gray-500 relative">
           <svg className="ml-4" width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18.976 20.4554L15.0377 16.5101M17.2202 11.2373C17.2202 13.2164 16.434 15.1145 15.0345 16.514C13.6351 17.9134 11.737 18.6996 9.75789 18.6996C7.77876 18.6996 5.8807 17.9134 4.48125 16.514C3.0818 15.1145 2.29559 13.2164 2.29559 11.2373C2.29559 9.25819 3.0818 7.36013 4.48125 5.96068C5.8807 4.56123 7.77876 3.77502 9.75789 3.77502C11.737 3.77502 13.6351 4.56123 15.0345 5.96068C16.434 7.36013 17.2202 9.25819 17.2202 11.2373V11.2373Z" stroke="#636363" strokeWidth="1.75583" strokeLinecap="round" />
           </svg>
@@ -186,8 +189,7 @@ export default function Home() {
             value={searchQuery}
             onChange={handleSearchChange}
           />
-        </div>
-        {searchResults.length > 0 && (
+          {searchResults.length > 0 && (
             <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-b-md shadow-lg z-10">
               {searchResults.map((result) => (
                 <div
@@ -200,6 +202,8 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+        
         <button className="ml-4 bg-blue-500 text-white rounded-md h-[50px] w-24">Search</button>
       </div>
       {/*Main*/}
@@ -250,18 +254,27 @@ export default function Home() {
               {tableData.map((row: SearchResult) => (
                 <tr key={row._id} className="">
                   <td className="p-2">
-                    <div className="bg-gray-200 p-4 rounded-lg w-28 h-28 flex items-center justify-center">
-                    <AlertCircle size={36} className="text-gray-500" />
+                    <div className="bg-white shadow-lg p-4 rounded-lg w-40 h-32 flex items-center justify-center">
+                      <svg width="56" height="62" viewBox="0 0 56 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M49.226 0.613403H1.82021C1.37165 0.613403 0.923096 0.987373 0.923096 1.51051V57.6647C0.923096 58.1133 1.29706 58.5619 1.82021 58.5619L31.9536 58.5624C32.2524 58.5624 32.4772 58.1884 32.3275 57.8895C29.2617 52.9544 29.486 46.4493 33.4489 41.6639C34.2714 40.6171 35.2436 39.7946 36.2904 39.0466C36.6644 38.8223 36.4401 38.2986 36.0661 38.2986L5.11027 38.2992C5.03568 38.2992 4.96057 38.2246 4.96057 38.1495V4.42702C4.96057 4.35244 5.03516 4.27733 5.11027 4.27733H45.8613C45.9359 4.27733 46.011 4.35191 46.011 4.42702V36.3549C46.011 36.5792 46.1607 36.7289 46.385 36.7289C47.4318 36.8786 48.4786 37.1775 49.5255 37.626C49.8243 37.7757 50.1237 37.5514 50.1237 37.252V1.51073C50.1237 0.987589 49.7497 0.613619 49.2266 0.613619L49.226 0.613403Z" fill="#C8C8C8"/>
+                      <path d="M49.226 0.613403H1.82021C1.37165 0.613403 0.923096 0.987373 0.923096 1.51051V57.6647C0.923096 58.1133 1.29706 58.5619 1.82021 58.5619L31.9536 58.5624C32.2524 58.5624 32.4772 58.1884 32.3275 57.8895C29.2617 52.9544 29.486 46.4493 33.4489 41.6639C34.2714 40.6171 35.2436 39.7946 36.2904 39.0466C36.6644 38.8223 36.4401 38.2986 36.0661 38.2986L5.11027 38.2992C5.03568 38.2992 4.96057 38.2246 4.96057 38.1495V4.42702C4.96057 4.35244 5.03516 4.27733 5.11027 4.27733H45.8613C45.9359 4.27733 46.011 4.35191 46.011 4.42702V36.3549C46.011 36.5792 46.1607 36.7289 46.385 36.7289C47.4318 36.8786 48.4786 37.1775 49.5255 37.626C49.8243 37.7757 50.1237 37.5514 50.1237 37.252V1.51073C50.1237 0.987589 49.7497 0.613619 49.2266 0.613619L49.226 0.613403Z" fill="#C8C8C8"/>
+                      <path d="M20.3156 18.8327L25.9072 13.2411L32.5025 19.8364L26.9109 25.428L20.3156 18.8327Z" fill="#C8C8C8"/>
+                      <path d="M29.1376 27.9668C28.6558 28.4485 27.8747 28.4485 27.3929 27.9668C26.9111 27.485 26.9111 26.7039 27.3929 26.2221L33.2978 20.3171C33.7796 19.8354 34.5607 19.8354 35.0425 20.3171C35.5243 20.7989 35.5243 21.58 35.0425 22.0618L29.1376 27.9668Z" fill="#C8C8C8"/>
+                      <path d="M19.5198 18.349C19.0381 18.8307 18.2569 18.8307 17.7751 18.349C17.2934 17.8672 17.2934 17.0861 17.7751 16.6043L23.6801 10.6993C24.1618 10.2176 24.943 10.2176 25.4248 10.6993C25.9065 11.1811 25.9065 11.9622 25.4248 12.444L19.5198 18.349Z" fill="#C8C8C8"/>
+                      <path d="M22.9646 21.481L24.2619 22.7782L14.8675 32.1722C14.5092 32.5305 13.9256 32.5277 13.5673 32.1694C13.3881 31.9902 13.2999 31.757 13.2999 31.5223C13.2999 31.2874 13.3909 31.0542 13.5701 30.875L22.9646 21.481Z" fill="#C8C8C8"/>
+                      <path d="M20.9531 32.4289C20.9531 31.0945 22.0436 29.9957 23.3887 29.9957H35.134C36.4792 29.9957 37.5698 31.0946 37.5698 32.4289H20.9531Z" fill="#C8C8C8"/>
+                      <path d="M51.2449 41.9627C46.5341 38.0743 39.5053 38.7477 35.6174 43.458C31.7291 48.1688 32.4025 55.1975 37.1128 59.0854C41.8236 62.9738 48.8523 62.3004 52.7402 57.5901C56.6285 52.8798 55.9557 45.8511 51.2449 41.9627ZM49.1513 44.5048C51.9177 46.7481 52.7402 50.5612 51.3194 53.7017C51.2448 53.8514 51.0206 53.926 50.8709 53.7763L39.73 44.5799C39.5803 44.4302 39.5803 44.2059 39.73 44.1313C42.5715 42.187 46.3848 42.262 49.1512 44.5048L49.1513 44.5048ZM39.2065 56.6183C36.4401 54.375 35.6176 50.5619 37.0384 47.4215C37.113 47.2718 37.3372 47.1972 37.4869 47.3469L48.7028 56.5438C48.8525 56.6935 48.8525 56.9177 48.7028 56.9923C45.8613 58.9363 41.9736 58.8616 39.2066 56.6183H39.2065Z" fill="#C8C8C8"/>
+                      </svg>
                     </div>
                   </td>
-                  <td className="p-2 w-60 flex flex-col justify-between h-36">
+                  <td className="p-10 w-60 flex flex-col justify-between h-36">
                     <div className="div">
                       <div className="font-bold text-left">{row._source.mark_identification}</div>
                       <div className="text-sm text-left text-gray-600">{row._source.current_owner}</div>
                     </div>
                     <div className="div">
                       <div className="text-sm text-left">{row._source.registration_number}</div>
-                      <div className="text-sm text-left text-gray-500">{formatDate(new Date(row._source.registration_date * 1000))}</div>
+                      <div className="text-sm text-left text-gray-500">{formatDate(new Date(row._source.status_date * 1000))}</div>
                     </div> 
                   </td>
                   <td className="p-2 h-36">
@@ -277,7 +290,7 @@ export default function Home() {
                         <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        {formatDate(addYears(new Date(row._source.registration_date * 1000),10))} {/* Assuming 10 years renewal period */}
+                        {formatDate(new Date(row._source.renewal_date * 1000))}
                       </div>
                     </div>             
                   </td>
