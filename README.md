@@ -10,6 +10,7 @@
 - ![Vercel](https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white)
 - ```React-Toasts``` -> For Status Indicators
 - Implemented Search Functionalities
+- Added Suggestive Search Feature with drop down menu under searchbar
 - Implemented Filtering Functionalities
 
 Check Deployment and Working of the webpage at : [trademarkia-21blc1174-frontend.vercel.app](https://trademarkia-21blc1174-frontend.vercel.app)
