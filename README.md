@@ -9,6 +9,10 @@
 - ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 - ![Vercel](https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white)
 - ```React-Toasts``` -> For Status Indicators
+- Implemented Search Functionalities
+- Implemented Filtering Functionalities
+
+Check Deployment and Working of the webpage at : [trademarkia-21blc1174-frontend.vercel.app](https://trademarkia-21blc1174-frontend.vercel.app)
 
 ## Getting Started
 
