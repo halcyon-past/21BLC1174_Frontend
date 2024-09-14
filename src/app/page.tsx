@@ -8,12 +8,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
+
 type TabName = 'Owners' | 'Law Firms' | 'Attorneys';
 
 interface ListItem {
   name: string;
   checked: boolean;
 }
+
 interface SearchResult {
   _id: string;
   _source: {
@@ -60,6 +62,7 @@ type ApiResponse = {
     };
   };
 };
+
 
 export default function Home() {
   const searchResultsRef = useRef<HTMLDivElement | null>(null);
@@ -429,14 +432,14 @@ export default function Home() {
                     </td>
                     <td className="p-4 align-top">
                       <div className="flex flex-col justify-between h-full">
-                        <div>
+                        <div className="h-full">
                           <div className="flex items-center">
                             <span className={`h-2 w-2 ${row._source.status_code === 700 ? 'bg-green-500' : 'bg-yellow-500'} rounded-full mr-2`}></span>
                             <span className={row._source.status_code === 700 ? 'text-green-500' : 'text-yellow-500'}>{row._source.status_type}</span>
                           </div>
                           <div className="text-sm mt-2">on <b>{formatDate(new Date(row._source.registration_date * 1000))}</b></div>
                         </div>
-                        <div className="text-xs flex items-center font-semibold mt-2">
+                        <div className="text-xs flex items-center font-semibold mt-8">
                           <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
