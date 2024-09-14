@@ -39,7 +39,7 @@ export default function Home() {
   const [activeStatus, setActiveStatus] = useState('All');
   const [activeView, setActiveView] = useState('Grid View');
   const [data, setData] = useState({ body: { hits: { hits: [] } } });
-  const [tableData, setTableData] = useState<any[]>([]);
+  const [tableData, setTableData] = useState<SearchResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
@@ -139,6 +139,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchSearchResults('nike');
+    console.log('Data:', tableData);
   },[]);
 
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
