@@ -26,6 +26,10 @@ interface SearchResult {
   };
 }
 
+interface RowSource {
+  registration_date: number; // Unix timestamp in seconds
+}
+
 type ListData = {
   [key in TabName]: ListItem[];
 };
@@ -148,6 +152,18 @@ export default function Home() {
       classes: ['Class 45', 'Class 8', 'Class 8'],
     },
   ];*/
+  const formatDate = (date: Date): string => {
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const addYears = (date: Date, years: number): Date => {
+    const newDate = new Date(date);
+    newDate.setUTCFullYear(newDate.getUTCFullYear() + years);
+    return newDate;
+  };
 
   return (
     <div className="flex flex-col items-center">
@@ -241,7 +257,7 @@ export default function Home() {
                     </div>
                     <div className="div">
                       <div className="text-sm">{row._source.registration_number}</div>
-                      <div className="text-sm text-gray-500">{new Date(row._source.registration_date * 1000).toLocaleDateString('en-GB')}</div>
+                      <div className="text-sm text-gray-500">{formatDate(new Date(row._source.registration_date * 1000))}</div>
                     </div> 
                   </td>
                   <td className="p-2 h-36">
@@ -251,13 +267,13 @@ export default function Home() {
                           <span className={`h-2 w-2 ${row._source.status_code === 700 ? 'bg-green-500' : 'bg-yellow-500'} rounded-full mr-2`}></span>
                           <span className={row._source.status_code === 700 ? 'text-green-500' : 'text-yellow-500'}>{row._source.status_type}</span>
                         </div>
-                        <div className="text-sm">on <b>{new Date(row._source.registration_date * 1000).toLocaleDateString('en-GB')}</b></div>
+                        <div className="text-sm">on <b>{formatDate(new Date(row._source.registration_date * 1000))}</b></div>
                       </div>
                       <div className="text-sm flex items-center font-semibold">
                         <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        {new Date(row._source.registration_date * 1000 + 10 * 365 * 24 * 60 * 60 * 1000).toLocaleDateString()} {/* Assuming 10 years renewal period */}
+                        {formatDate(addYears(new Date(row._source.registration_date * 1000),10))} {/* Assuming 10 years renewal period */}
                       </div>
                     </div>             
                   </td>
