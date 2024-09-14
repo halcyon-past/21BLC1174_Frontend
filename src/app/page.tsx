@@ -229,7 +229,7 @@ export default function Home() {
       {/*Main*/}
       <div className="main w-full p-10">
         {/*First Section*/}
-        <div className="found font-semibold h-10 border-solid border-b-2 border-gray-300">About 159 Trademarks found for “nike”</div>
+        {searchQuery!=''?<div className="found font-semibold h-10 border-solid border-b-2 border-gray-300">About {data.body.hits.hits.length} Trademarks found for {searchQuery}</div>:''}
         {/*Second Section*/}
         <div className="flex flex-wrap justify-between items-center pt-5 pb-5">
           <div className="suggestion flex">
