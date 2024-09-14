@@ -3,6 +3,9 @@ import Image from "next/image";
 import logo from "./assets/logo.svg"
 import { Search, Check } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 
 type TabName = 'Owners' | 'Law Firms' | 'Attorneys';
@@ -11,7 +14,6 @@ interface ListItem {
   name: string;
   checked: boolean;
 }
-
 interface SearchResult {
   _id: string;
   _source: {
@@ -25,11 +27,38 @@ interface SearchResult {
     status_type: string;
     mark_description_description: string[];
     class_codes: string[];
+    law_firms?: string;
+    attorneys?: string;
   };
 }
 
 type ListData = {
   [key in TabName]: ListItem[];
+};
+
+type ApiResponse = {
+  body: {
+    aggregations: {
+      attorneys: {
+        buckets: {
+          doc_count: number;
+          key: string;
+        }[];
+      };
+      current_owners: {
+        buckets: {
+          doc_count: number;
+          key: string;
+        }[];
+      };
+      law_firms: {
+        buckets: {
+          doc_count: number;
+          key: string;
+        }[];
+      };
+    };
+  };
 };
 
 export default function Home() {
@@ -128,12 +157,29 @@ export default function Home() {
     try {
       const response = await axios.request(config);
       console.log('Search results:', response.data);
+      updateListData(response.data.body);
       setData(response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching search results:', error);
       return { body: { hits: { hits: [] } } };
     }
+  };
+
+  const updateListData = (responseData: ApiResponse['body']) => {
+    console.log('API Response:', responseData);
+
+    const formatData = (items: { key: string; doc_count: number }[]) =>
+      items.map((item, index) => ({
+        name: item.key,
+        checked: index === 0,
+      }));
+
+    setListData({
+      Owners: formatData(responseData.aggregations.current_owners.buckets),
+      'Law Firms': formatData(responseData.aggregations.law_firms.buckets),
+      Attorneys: formatData(responseData.aggregations.attorneys.buckets),
+    });
   };
 
   useEffect(() => {
@@ -157,12 +203,20 @@ export default function Home() {
   };
 
   const handleSearchClick = async () => {
+    notify("success");
     if (searchQuery.length > 2) {
       const results = await fetchSearchResults(searchQuery);
       if (results) {
         setTableData(results.body.hits.hits);
+        console.log('Results:', results.body.hits.hits);
         setSelectedResult(null);
       }
+      if (results.body.hits.hits.length==0){
+        notify("warning");
+      }
+    }
+    else{
+      notify("error");
     }
   };
 
@@ -220,8 +274,27 @@ export default function Home() {
     return `${day} ${month} ${year}`;
   };
 
+  const notify = (type:string) => {
+    if (type=='error'){
+      toast.error('Some Error Occured!', {
+        position: 'top-right',
+      });
+    }
+    if (type=='success'){
+      toast.success('Searching!', {
+        position: 'top-right',
+      });
+    }
+    if (type=='warning'){
+      toast.warning('No Results Found!', {
+        position: 'top-right',
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col items-center">
+      <ToastContainer />
       {/*Navbar*/}
       <div className="nav bg-[#F8FAFE] h-28 w-full flex justify-start pl-16 items-center border-solid border-b-8 border-blue-100">
         <Image onClick={homeClick} src={logo} className="logo cursor-pointer" alt="logo" />
