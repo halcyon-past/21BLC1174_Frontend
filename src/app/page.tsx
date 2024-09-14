@@ -128,6 +128,7 @@ export default function Home() {
   
     try {
       const response = await axios.request(config);
+      console.log('Search results:', response.data);
       setData(response.data);
       return response.data;
     } catch (error) {
