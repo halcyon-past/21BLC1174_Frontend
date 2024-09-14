@@ -2,9 +2,9 @@
 import Image from "next/image";
 import logo from "./assets/logo.svg"
 import { Search, Check } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import data from '../utils/dummyData';
+/*import data from '../utils/dummyData';*/
 
 type TabName = 'Owners' | 'Law Firms' | 'Attorneys';
 
@@ -29,18 +29,17 @@ interface SearchResult {
   };
 }
 
-interface RowSource {
-  registration_date: number;
-}
-
 type ListData = {
   [key in TabName]: ListItem[];
 };
 
 export default function Home() {
+  const searchResultsRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabName>('Owners');
   const [activeStatus, setActiveStatus] = useState('All');
   const [activeView, setActiveView] = useState('Grid View');
+  const [data, setData] = useState({ body: { hits: { hits: [] } } });
+  const [tableData, setTableData] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
@@ -59,6 +58,18 @@ export default function Home() {
       { name: 'Jane Smith, Esq.', checked: false },
     ],
   });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const statuses = [
     { name: 'All', color: 'bg-blue-400 text-blue-600' },
@@ -117,12 +128,17 @@ export default function Home() {
   
     try {
       const response = await axios.request(config);
+      setData(response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching search results:', error);
-      return { body: { hits: { hits: [] } } }; // Return an empty result on error
+      return { body: { hits: { hits: [] } } };
     }
   };
+
+  useEffect(() => {
+    fetchSearchResults('nike');
+  },[]);
 
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -139,18 +155,29 @@ export default function Home() {
     }
   };
 
+  const handleSearchClick = async () => {
+    if (searchQuery.length > 2) {
+      const results = await fetchSearchResults(searchQuery);
+      if (results) {
+        setTableData(results.body.hits.hits);
+        setSelectedResult(null);
+      }
+    }
+  };
+
   const handleResultClick = (result: SearchResult) => {
     setSelectedResult(result);
     setSearchQuery(result._source.mark_identification);
     setSearchResults([]);
   };
 
-  // Filter list items based on the search query
-  const filteredListData = listData[activeTab].filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const tableData = selectedResult ? [selectedResult] : data.body.hits.hits.slice(0, 3);
+  useEffect(() => {
+    if (selectedResult) {
+      setTableData([selectedResult]);
+    } else if (data && data.body && data.body.hits && data.body.hits.hits) {
+      setTableData(data.body.hits.hits.slice(0, 5));
+    }
+  }, [selectedResult, data]);
 
   const formatDate = (date: Date): string => {
     const day = String(date.getUTCDate()).padStart(2, '0');
@@ -181,21 +208,21 @@ export default function Home() {
             onChange={handleSearchChange}
           />
           {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-b-md shadow-lg z-10">
+            <div ref={searchResultsRef} className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-b-md shadow-lg z-10">
               {searchResults.map((result) => (
                 <div
                   key={result._id}
                   className="p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => handleResultClick(result)}
                 >
-                  {result._source.mark_identification}
+                  {result._source.mark_identification + ' - ' + result._source.current_owner}
                 </div>
               ))}
             </div>
           )}
         </div>
         
-        <button className="ml-4 bg-blue-500 text-white rounded-md h-[50px] w-24">Search</button>
+        <button onClick={handleSearchClick} className="ml-4 bg-blue-500 text-white rounded-md h-[50px] w-24">Search</button>
       </div>
       {/*Main*/}
       <div className="main w-full p-10">
@@ -233,87 +260,87 @@ export default function Home() {
         <div className="flex justify-between">
           {/*Table*/}
           <div className="w-8/12 overflow-x-auto">
-      <table className="w-full border-collapse text-left">
-        <thead>
-          <tr className="border-b border-gray-200">
-            <th className="p-4 font-semibold">Mark</th>
-            <th className="p-4 font-semibold">Details</th>
-            <th className="p-4 font-semibold w-40">Status</th>
-            <th className="p-4 font-semibold">Class/Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tableData.map((row: SearchResult) => (
-            <tr key={row._id} className="border-b border-gray-100">
-              <td className="p-4 align-top">
-                <div className="bg-white shadow-lg p-4 rounded-lg w-40 h-32 flex items-center justify-center">
-                  <svg width="56" height="62" viewBox="0 0 56 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M49.226 0.613403H1.82021C1.37165 0.613403 0.923096 0.987373 0.923096 1.51051V57.6647C0.923096 58.1133 1.29706 58.5619 1.82021 58.5619L31.9536 58.5624C32.2524 58.5624 32.4772 58.1884 32.3275 57.8895C29.2617 52.9544 29.486 46.4493 33.4489 41.6639C34.2714 40.6171 35.2436 39.7946 36.2904 39.0466C36.6644 38.8223 36.4401 38.2986 36.0661 38.2986L5.11027 38.2992C5.03568 38.2992 4.96057 38.2246 4.96057 38.1495V4.42702C4.96057 4.35244 5.03516 4.27733 5.11027 4.27733H45.8613C45.9359 4.27733 46.011 4.35191 46.011 4.42702V36.3549C46.011 36.5792 46.1607 36.7289 46.385 36.7289C47.4318 36.8786 48.4786 37.1775 49.5255 37.626C49.8243 37.7757 50.1237 37.5514 50.1237 37.252V1.51073C50.1237 0.987589 49.7497 0.613619 49.2266 0.613619L49.226 0.613403Z" fill="#C8C8C8"/>
-                        <path d="M49.226 0.613403H1.82021C1.37165 0.613403 0.923096 0.987373 0.923096 1.51051V57.6647C0.923096 58.1133 1.29706 58.5619 1.82021 58.5619L31.9536 58.5624C32.2524 58.5624 32.4772 58.1884 32.3275 57.8895C29.2617 52.9544 29.486 46.4493 33.4489 41.6639C34.2714 40.6171 35.2436 39.7946 36.2904 39.0466C36.6644 38.8223 36.4401 38.2986 36.0661 38.2986L5.11027 38.2992C5.03568 38.2992 4.96057 38.2246 4.96057 38.1495V4.42702C4.96057 4.35244 5.03516 4.27733 5.11027 4.27733H45.8613C45.9359 4.27733 46.011 4.35191 46.011 4.42702V36.3549C46.011 36.5792 46.1607 36.7289 46.385 36.7289C47.4318 36.8786 48.4786 37.1775 49.5255 37.626C49.8243 37.7757 50.1237 37.5514 50.1237 37.252V1.51073C50.1237 0.987589 49.7497 0.613619 49.2266 0.613619L49.226 0.613403Z" fill="#C8C8C8"/>
-                        <path d="M20.3156 18.8327L25.9072 13.2411L32.5025 19.8364L26.9109 25.428L20.3156 18.8327Z" fill="#C8C8C8"/>
-                        <path d="M29.1376 27.9668C28.6558 28.4485 27.8747 28.4485 27.3929 27.9668C26.9111 27.485 26.9111 26.7039 27.3929 26.2221L33.2978 20.3171C33.7796 19.8354 34.5607 19.8354 35.0425 20.3171C35.5243 20.7989 35.5243 21.58 35.0425 22.0618L29.1376 27.9668Z" fill="#C8C8C8"/>
-                        <path d="M19.5198 18.349C19.0381 18.8307 18.2569 18.8307 17.7751 18.349C17.2934 17.8672 17.2934 17.0861 17.7751 16.6043L23.6801 10.6993C24.1618 10.2176 24.943 10.2176 25.4248 10.6993C25.9065 11.1811 25.9065 11.9622 25.4248 12.444L19.5198 18.349Z" fill="#C8C8C8"/>
-                        <path d="M22.9646 21.481L24.2619 22.7782L14.8675 32.1722C14.5092 32.5305 13.9256 32.5277 13.5673 32.1694C13.3881 31.9902 13.2999 31.757 13.2999 31.5223C13.2999 31.2874 13.3909 31.0542 13.5701 30.875L22.9646 21.481Z" fill="#C8C8C8"/>
-                        <path d="M20.9531 32.4289C20.9531 31.0945 22.0436 29.9957 23.3887 29.9957H35.134C36.4792 29.9957 37.5698 31.0946 37.5698 32.4289H20.9531Z" fill="#C8C8C8"/>
-                        <path d="M51.2449 41.9627C46.5341 38.0743 39.5053 38.7477 35.6174 43.458C31.7291 48.1688 32.4025 55.1975 37.1128 59.0854C41.8236 62.9738 48.8523 62.3004 52.7402 57.5901C56.6285 52.8798 55.9557 45.8511 51.2449 41.9627ZM49.1513 44.5048C51.9177 46.7481 52.7402 50.5612 51.3194 53.7017C51.2448 53.8514 51.0206 53.926 50.8709 53.7763L39.73 44.5799C39.5803 44.4302 39.5803 44.2059 39.73 44.1313C42.5715 42.187 46.3848 42.262 49.1512 44.5048L49.1513 44.5048ZM39.2065 56.6183C36.4401 54.375 35.6176 50.5619 37.0384 47.4215C37.113 47.2718 37.3372 47.1972 37.4869 47.3469L48.7028 56.5438C48.8525 56.6935 48.8525 56.9177 48.7028 56.9923C45.8613 58.9363 41.9736 58.8616 39.2066 56.6183H39.2065Z" fill="#C8C8C8"/>
-                  </svg>
-                </div>
-              </td>
-              <td className="p-4 align-top">
-                <div className="flex flex-col justify-between h-full">
-                  <div>
-                    <div className="font-bold">{row._source.mark_identification}</div>
-                    <div className="text-sm text-gray-600">{row._source.current_owner}</div>
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-sm">{row._source.registration_number}</div>
-                    <div className="text-sm text-gray-500">{formatDate(new Date(row._source.status_date * 1000))}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="p-4 align-top">
-                <div className="flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center">
-                      <span className={`h-2 w-2 ${row._source.status_code === 700 ? 'bg-green-500' : 'bg-yellow-500'} rounded-full mr-2`}></span>
-                      <span className={row._source.status_code === 700 ? 'text-green-500' : 'text-yellow-500'}>{row._source.status_type}</span>
-                    </div>
-                    <div className="text-sm mt-2">on <b>{formatDate(new Date(row._source.registration_date * 1000))}</b></div>
-                  </div>
-                  <div className="text-xs flex items-center font-semibold mt-2">
-                    <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    {formatDate(new Date(row._source.renewal_date * 1000))}
-                  </div>
-                </div>
-              </td>
-              <td className="p-4 align-top">
-                <div>
-                  <div>{row._source.mark_description_description[0].length > 200
-                    ? row._source.mark_description_description[0].slice(0, 200) + '...'
-                    : row._source.mark_description_description[0]}
-                  </div>
-                  <div className="flex mt-2 flex-wrap">
-                    {row._source.class_codes.map((cls, idx) => (
-                      <span key={idx} className="text-gray-700 px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center font-semibold">
-                        <svg width="17" height="22" viewBox="0 0 17 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
-                          <path d="M13.1289 10.1218L15.3047 5.61839L15.8339 5.87407C16.2085 6.05504 16.6589 5.89808 16.8399 5.52351C17.0208 5.14891 16.8639 4.69851 16.4893 4.51754C16.3119 4.43181 9.30265 1.04538 8.80709 0.805952C8.43252 0.624983 7.98212 0.781945 7.80115 1.15651C7.62018 1.53108 7.77714 1.98148 8.15171 2.16245L8.68093 2.41814L6.50513 6.92159C-0.456288 7.56705 -2.33925 17.1719 4.12813 20.2965C10.6042 23.4254 16.9495 15.9749 13.1289 10.1218ZM7.0169 8.39842C7.29679 8.38916 7.5484 8.22537 7.67021 7.97325L10.0374 3.07357L13.9481 4.96298L11.5809 9.86266C11.4591 10.1148 11.4872 10.4137 11.6538 10.6387C12.8302 12.2269 12.9644 13.8731 12.5923 15.2646L8.29117 13.1866C8.58073 12.4928 8.27935 11.683 7.59435 11.352L3.80026 9.51896C4.61344 8.88053 5.67642 8.44287 7.0169 8.39842ZM4.78353 18.94C1.35956 17.2857 0.87055 13.3112 2.71758 10.669L6.86988 12.6752C6.58031 13.3689 6.88169 14.1788 7.56669 14.5097L12.0157 16.6592C10.637 19.0657 7.69006 20.3443 4.78353 18.94Z" fill="#575757"/>
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="p-4 font-semibold">Mark</th>
+                  <th className="p-4 font-semibold">Details</th>
+                  <th className="p-4 font-semibold w-40">Status</th>
+                  <th className="p-4 font-semibold">Class/Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.map((row: SearchResult) => (
+                  <tr key={row._id} className="border-b border-gray-100">
+                    <td className="p-4 align-top">
+                      <div className="bg-white shadow-lg p-4 rounded-lg w-40 h-32 flex items-center justify-center">
+                        <svg width="56" height="62" viewBox="0 0 56 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M49.226 0.613403H1.82021C1.37165 0.613403 0.923096 0.987373 0.923096 1.51051V57.6647C0.923096 58.1133 1.29706 58.5619 1.82021 58.5619L31.9536 58.5624C32.2524 58.5624 32.4772 58.1884 32.3275 57.8895C29.2617 52.9544 29.486 46.4493 33.4489 41.6639C34.2714 40.6171 35.2436 39.7946 36.2904 39.0466C36.6644 38.8223 36.4401 38.2986 36.0661 38.2986L5.11027 38.2992C5.03568 38.2992 4.96057 38.2246 4.96057 38.1495V4.42702C4.96057 4.35244 5.03516 4.27733 5.11027 4.27733H45.8613C45.9359 4.27733 46.011 4.35191 46.011 4.42702V36.3549C46.011 36.5792 46.1607 36.7289 46.385 36.7289C47.4318 36.8786 48.4786 37.1775 49.5255 37.626C49.8243 37.7757 50.1237 37.5514 50.1237 37.252V1.51073C50.1237 0.987589 49.7497 0.613619 49.2266 0.613619L49.226 0.613403Z" fill="#C8C8C8"/>
+                              <path d="M49.226 0.613403H1.82021C1.37165 0.613403 0.923096 0.987373 0.923096 1.51051V57.6647C0.923096 58.1133 1.29706 58.5619 1.82021 58.5619L31.9536 58.5624C32.2524 58.5624 32.4772 58.1884 32.3275 57.8895C29.2617 52.9544 29.486 46.4493 33.4489 41.6639C34.2714 40.6171 35.2436 39.7946 36.2904 39.0466C36.6644 38.8223 36.4401 38.2986 36.0661 38.2986L5.11027 38.2992C5.03568 38.2992 4.96057 38.2246 4.96057 38.1495V4.42702C4.96057 4.35244 5.03516 4.27733 5.11027 4.27733H45.8613C45.9359 4.27733 46.011 4.35191 46.011 4.42702V36.3549C46.011 36.5792 46.1607 36.7289 46.385 36.7289C47.4318 36.8786 48.4786 37.1775 49.5255 37.626C49.8243 37.7757 50.1237 37.5514 50.1237 37.252V1.51073C50.1237 0.987589 49.7497 0.613619 49.2266 0.613619L49.226 0.613403Z" fill="#C8C8C8"/>
+                              <path d="M20.3156 18.8327L25.9072 13.2411L32.5025 19.8364L26.9109 25.428L20.3156 18.8327Z" fill="#C8C8C8"/>
+                              <path d="M29.1376 27.9668C28.6558 28.4485 27.8747 28.4485 27.3929 27.9668C26.9111 27.485 26.9111 26.7039 27.3929 26.2221L33.2978 20.3171C33.7796 19.8354 34.5607 19.8354 35.0425 20.3171C35.5243 20.7989 35.5243 21.58 35.0425 22.0618L29.1376 27.9668Z" fill="#C8C8C8"/>
+                              <path d="M19.5198 18.349C19.0381 18.8307 18.2569 18.8307 17.7751 18.349C17.2934 17.8672 17.2934 17.0861 17.7751 16.6043L23.6801 10.6993C24.1618 10.2176 24.943 10.2176 25.4248 10.6993C25.9065 11.1811 25.9065 11.9622 25.4248 12.444L19.5198 18.349Z" fill="#C8C8C8"/>
+                              <path d="M22.9646 21.481L24.2619 22.7782L14.8675 32.1722C14.5092 32.5305 13.9256 32.5277 13.5673 32.1694C13.3881 31.9902 13.2999 31.757 13.2999 31.5223C13.2999 31.2874 13.3909 31.0542 13.5701 30.875L22.9646 21.481Z" fill="#C8C8C8"/>
+                              <path d="M20.9531 32.4289C20.9531 31.0945 22.0436 29.9957 23.3887 29.9957H35.134C36.4792 29.9957 37.5698 31.0946 37.5698 32.4289H20.9531Z" fill="#C8C8C8"/>
+                              <path d="M51.2449 41.9627C46.5341 38.0743 39.5053 38.7477 35.6174 43.458C31.7291 48.1688 32.4025 55.1975 37.1128 59.0854C41.8236 62.9738 48.8523 62.3004 52.7402 57.5901C56.6285 52.8798 55.9557 45.8511 51.2449 41.9627ZM49.1513 44.5048C51.9177 46.7481 52.7402 50.5612 51.3194 53.7017C51.2448 53.8514 51.0206 53.926 50.8709 53.7763L39.73 44.5799C39.5803 44.4302 39.5803 44.2059 39.73 44.1313C42.5715 42.187 46.3848 42.262 49.1512 44.5048L49.1513 44.5048ZM39.2065 56.6183C36.4401 54.375 35.6176 50.5619 37.0384 47.4215C37.113 47.2718 37.3372 47.1972 37.4869 47.3469L48.7028 56.5438C48.8525 56.6935 48.8525 56.9177 48.7028 56.9923C45.8613 58.9363 41.9736 58.8616 39.2066 56.6183H39.2065Z" fill="#C8C8C8"/>
                         </svg>
-                        {"class "+cls}
-                      </span>
-                    ))}
-                    {row._source.class_codes.length > 3 && (
-                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs flex items-center">...</span>
-                    )}
-                  </div>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                      </div>
+                    </td>
+                    <td className="p-4 align-top">
+                      <div className="flex flex-col justify-between h-full">
+                        <div>
+                          <div className="font-bold">{row._source.mark_identification}</div>
+                          <div className="text-sm text-gray-600">{row._source.current_owner}</div>
+                        </div>
+                        <div className="mt-2">
+                          <div className="text-sm">{row._source.registration_number}</div>
+                          <div className="text-sm text-gray-500">{formatDate(new Date(row._source.status_date * 1000))}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 align-top">
+                      <div className="flex flex-col justify-between h-full">
+                        <div>
+                          <div className="flex items-center">
+                            <span className={`h-2 w-2 ${row._source.status_code === 700 ? 'bg-green-500' : 'bg-yellow-500'} rounded-full mr-2`}></span>
+                            <span className={row._source.status_code === 700 ? 'text-green-500' : 'text-yellow-500'}>{row._source.status_type}</span>
+                          </div>
+                          <div className="text-sm mt-2">on <b>{formatDate(new Date(row._source.registration_date * 1000))}</b></div>
+                        </div>
+                        <div className="text-xs flex items-center font-semibold mt-2">
+                          <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          {formatDate(new Date(row._source.renewal_date * 1000))}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 align-top">
+                      <div>
+                        <div>{row._source.mark_description_description[0].length > 200
+                          ? row._source.mark_description_description[0].slice(0, 200) + '...'
+                          : row._source.mark_description_description[0]}
+                        </div>
+                        <div className="flex mt-2 flex-wrap">
+                          {row._source.class_codes.map((cls, idx) => (
+                            <span key={idx} className="text-gray-700 px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center font-semibold">
+                              <svg width="17" height="22" viewBox="0 0 17 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
+                                <path d="M13.1289 10.1218L15.3047 5.61839L15.8339 5.87407C16.2085 6.05504 16.6589 5.89808 16.8399 5.52351C17.0208 5.14891 16.8639 4.69851 16.4893 4.51754C16.3119 4.43181 9.30265 1.04538 8.80709 0.805952C8.43252 0.624983 7.98212 0.781945 7.80115 1.15651C7.62018 1.53108 7.77714 1.98148 8.15171 2.16245L8.68093 2.41814L6.50513 6.92159C-0.456288 7.56705 -2.33925 17.1719 4.12813 20.2965C10.6042 23.4254 16.9495 15.9749 13.1289 10.1218ZM7.0169 8.39842C7.29679 8.38916 7.5484 8.22537 7.67021 7.97325L10.0374 3.07357L13.9481 4.96298L11.5809 9.86266C11.4591 10.1148 11.4872 10.4137 11.6538 10.6387C12.8302 12.2269 12.9644 13.8731 12.5923 15.2646L8.29117 13.1866C8.58073 12.4928 8.27935 11.683 7.59435 11.352L3.80026 9.51896C4.61344 8.88053 5.67642 8.44287 7.0169 8.39842ZM4.78353 18.94C1.35956 17.2857 0.87055 13.3112 2.71758 10.669L6.86988 12.6752C6.58031 13.3689 6.88169 14.1788 7.56669 14.5097L12.0157 16.6592C10.637 19.0657 7.69006 20.3443 4.78353 18.94Z" fill="#575757"/>
+                              </svg>
+                              {"class "+cls}
+                            </span>
+                          ))}
+                          {row._source.class_codes.length > 3 && (
+                            <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs flex items-center">...</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {/*Right Section*/}
           <div className="w-72 space-y-6 mr-16">
             {/* Status Section */}
