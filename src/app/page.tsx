@@ -4,7 +4,6 @@ import logo from "./assets/logo.svg"
 import { Search, Check } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-/*import data from '../utils/dummyData';*/
 
 type TabName = 'Owners' | 'Law Firms' | 'Attorneys';
 
@@ -181,6 +180,35 @@ export default function Home() {
     }
   }, [selectedResult, data]);
 
+  const suggestion1 = async () =>{
+    if (searchQuery.length > 2) {
+      const results = await fetchSearchResults(searchQuery+"*");
+      if (results) {
+        setTableData(results.body.hits.hits);
+        setSelectedResult(null);
+      }
+    }
+  }
+
+  const suggestion2 = async () =>{
+    if (searchQuery.length > 2) {
+      const results = await fetchSearchResults("*"+searchQuery);
+      if (results) {
+        setTableData(results.body.hits.hits);
+        setSelectedResult(null);
+      }
+    }
+  }
+
+  const homeClick = async () =>{
+    const results = await fetchSearchResults('nike');
+    if (results) {
+      setTableData(results.body.hits.hits);
+      setSearchQuery('');
+      setSelectedResult(null);
+    }
+  }
+
   const formatDate = (date: Date): string => {
     const day = String(date.getUTCDate()).padStart(2, '0');
     const monthNames = [
@@ -196,7 +224,7 @@ export default function Home() {
     <div className="flex flex-col items-center">
       {/*Navbar*/}
       <div className="nav bg-[#F8FAFE] h-28 w-full flex justify-start pl-16 items-center border-solid border-b-8 border-blue-100">
-        <Image src={logo} className="logo" alt="logo w-24" />
+        <Image onClick={homeClick} src={logo} className="logo cursor-pointer" alt="logo" />
         <div className="search ml-14 w-[500px] h-[50px] flex justify-start items-center rounded-md border-solid border-2 border-gray-300 bg-white text-gray-500 relative">
           <svg className="ml-4" width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18.976 20.4554L15.0377 16.5101M17.2202 11.2373C17.2202 13.2164 16.434 15.1145 15.0345 16.514C13.6351 17.9134 11.737 18.6996 9.75789 18.6996C7.77876 18.6996 5.8807 17.9134 4.48125 16.514C3.0818 15.1145 2.29559 13.2164 2.29559 11.2373C2.29559 9.25819 3.0818 7.36013 4.48125 5.96068C5.8807 4.56123 7.77876 3.77502 9.75789 3.77502C11.737 3.77502 13.6351 4.56123 15.0345 5.96068C16.434 7.36013 17.2202 9.25819 17.2202 11.2373V11.2373Z" stroke="#636363" strokeWidth="1.75583" strokeLinecap="round" />
@@ -233,25 +261,41 @@ export default function Home() {
         {/*Second Section*/}
         <div className="flex flex-wrap justify-between items-center pt-5 pb-5">
           <div className="suggestion flex">
-            <div className="suggestion-title font-semibold h-8 flex justify-center items-center">Also try searching for</div>
-            <div className="suggestion-list flex flex-wrap">
-              <div className="suggestion-item ml-6 bg-[#FEF7F0] h-8 w-12 flex justify-center items-center border-[1px] border-[#E7760E] border-solid rounded-md text-[#E7760E] text-sm">nike*</div>
-              <div className="suggestion-item ml-6 bg-[#FEF7F0] h-8 w-12 flex justify-center items-center border-[1px] border-[#E7760E] border-solid rounded-md text-[#E7760E] text-sm">ike*</div>
-            </div>
+            {searchQuery && (
+              <div className="suggestion-title font-semibold h-8 flex justify-center items-center">
+                Also try searching for
+              </div>
+            )}
+            {searchQuery && (
+              <div className="suggestion-list flex flex-wrap">
+                <div
+                  onClick={suggestion1}
+                  className="suggestion-item ml-6 bg-[#FEF7F0] h-8 p-4 flex justify-center items-center border-[1px] border-[#E7760E] border-solid rounded-md text-[#E7760E] text-sm cursor-pointer"
+                >
+                  {searchQuery + "*"}
+                </div>
+                <div
+                  onClick={suggestion2}
+                  className="suggestion-item ml-6 bg-[#FEF7F0] h-8 p-4 flex justify-center items-center border-[1px] border-[#E7760E] border-solid rounded-md text-[#E7760E] text-sm cursor-pointer"
+                >
+                  {"*" + searchQuery}
+                </div>
+              </div>
+            )}
           </div>
           <div className="options flex w-80 justify-between items-center pr-20">
-            <div className="filter flex justify-center items-center border-gray-400 border-[1px] border-solid rounded-md text-gray-400 text-sm h-12 w-24">
+            <div className="filter flex justify-center items-center border-gray-400 border-[1px] border-solid rounded-md text-gray-400 text-sm h-12 w-24 cursor-pointer">
               <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2.83751 2.50004H11.1708L6.99584 7.75004L2.83751 2.50004ZM0.545843 2.17504C2.22918 4.33337 5.33751 8.33337 5.33751 8.33337V13.3334C5.33751 13.7917 5.71251 14.1667 6.17084 14.1667H7.83751C8.29584 14.1667 8.67084 13.7917 8.67084 13.3334V8.33337C8.67084 8.33337 11.7708 4.33337 13.4542 2.17504C13.8792 1.62504 13.4875 0.833374 12.7958 0.833374H1.20418C0.51251 0.833374 0.120843 1.62504 0.545843 2.17504Z" fill="#575757"/>
               </svg>
               <span className="ml-2">Filter</span>
             </div>
-            <div className="share flex justify-center items-center rounded-full border-solid border-gray-400 border-[1px] text-gray-400 text-sm h-10 w-10">
+            <div className="share flex justify-center items-center rounded-full border-solid border-gray-400 border-[1px] text-gray-400 text-sm h-10 w-10  cursor-pointer">
               <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M13 12.4333C12.3667 12.4333 11.8 12.6833 11.3667 13.075L5.425 9.61662C5.46667 9.42495 5.5 9.23328 5.5 9.03328C5.5 8.83328 5.46667 8.64162 5.425 8.44995L11.3 5.02495C11.75 5.44162 12.3417 5.69995 13 5.69995C14.3833 5.69995 15.5 4.58328 15.5 3.19995C15.5 1.81662 14.3833 0.699951 13 0.699951C11.6167 0.699951 10.5 1.81662 10.5 3.19995C10.5 3.39995 10.5333 3.59162 10.575 3.78328L4.7 7.20828C4.25 6.79162 3.65833 6.53328 3 6.53328C1.61667 6.53328 0.5 7.64995 0.5 9.03328C0.5 10.4166 1.61667 11.5333 3 11.5333C3.65833 11.5333 4.25 11.275 4.7 10.8583L10.6333 14.325C10.5917 14.5 10.5667 14.6833 10.5667 14.8666C10.5667 16.2083 11.6583 17.2999 13 17.2999C14.3417 17.2999 15.4333 16.2083 15.4333 14.8666C15.4333 13.525 14.3417 12.4333 13 12.4333ZM13 2.36662C13.4583 2.36662 13.8333 2.74162 13.8333 3.19995C13.8333 3.65828 13.4583 4.03328 13 4.03328C12.5417 4.03328 12.1667 3.65828 12.1667 3.19995C12.1667 2.74162 12.5417 2.36662 13 2.36662ZM3 9.86662C2.54167 9.86662 2.16667 9.49162 2.16667 9.03328C2.16667 8.57495 2.54167 8.19995 3 8.19995C3.45833 8.19995 3.83333 8.57495 3.83333 9.03328C3.83333 9.49162 3.45833 9.86662 3 9.86662ZM13 15.7166C12.5417 15.7166 12.1667 15.3416 12.1667 14.8833C12.1667 14.425 12.5417 14.05 13 14.05C13.4583 14.05 13.8333 14.425 13.8333 14.8833C13.8333 15.3416 13.4583 15.7166 13 15.7166Z" fill="#575757"/>
               </svg>
             </div>
-            <div className="sort flex justify-center items-center rounded-full border-solid border-gray-400 border-[1px] text-gray-400 text-sm h-10 w-10">
+            <div className="sort flex justify-center items-center rounded-full border-solid border-gray-400 border-[1px] text-gray-400 text-sm h-10 w-10  cursor-pointer">
               <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M0.5 10H5.5V8.33333H0.5V10ZM0.5 0V1.66667H15.5V0H0.5ZM0.5 5.83333H10.5V4.16667H0.5V5.83333Z" fill="#575757"/>
               </svg>
