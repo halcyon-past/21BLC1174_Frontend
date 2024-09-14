@@ -3,12 +3,27 @@ import Image from "next/image";
 import logo from "./assets/logo.svg"
 import { AlertCircle, Search, Check } from 'lucide-react';
 import React, { useState } from 'react';
+import data from '../utils/dummyData'
 
 type TabName = 'Owners' | 'Law Firms' | 'Attorneys';
 
 interface ListItem {
   name: string;
   checked: boolean;
+}
+
+interface SearchResult {
+  _id: string;
+  _source: {
+    mark_identification: string;
+    current_owner: string;
+    registration_number: string;
+    registration_date: number;
+    status_code: number;
+    status_type: string;
+    mark_description_description: string[];
+    class_codes: string[];
+  };
 }
 
 type ListData = {
@@ -19,6 +34,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabName>('Owners');
   const [activeStatus, setActiveStatus] = useState('All');
   const [activeView, setActiveView] = useState('Grid View');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [listData, setListData] = useState<ListData>({
     Owners: [
       { name: 'Tesla, Inc.', checked: true },
@@ -36,7 +54,7 @@ export default function Home() {
   });
 
   const statuses = [
-    { name: 'All', color: 'bg-blue-100 text-blue-600' },
+    { name: 'All', color: 'bg-blue-400 text-blue-600' },
     { name: 'Registered', color: 'bg-green-400 text-green-600' },
     { name: 'Pending', color: 'bg-yellow-400 text-yellow-600' },
     { name: 'Abandoned', color: 'bg-red-400 text-red-600' },
@@ -45,27 +63,7 @@ export default function Home() {
 
   const tabs = ['Owners', 'Law Firms', 'Attorneys'];
 
-  /*const listData = {
-    Owners: [
-      { name: 'Tesla, Inc.', checked: true },
-      { name: 'LEGALFORCE RAPC.', checked: false },
-      { name: 'SpaceX Inc.', checked: false },
-      { name: 'SpaceX Inc.', checked: false },
-      // Add more owners as needed
-    ],
-    'Law Firms': [
-      { name: 'Smith & Associates', checked: false },
-      { name: 'Johnson Legal Group', checked: false },
-      // Add more law firms as needed
-    ],
-    Attorneys: [
-      { name: 'John Doe, Esq.', checked: false },
-      { name: 'Jane Smith, Esq.', checked: false },
-      // Add more attorneys as needed
-    ],
-  };*/
-
-  const toggleCheck = (index:any) => {
+  const toggleCheck = (index:number) => {
     setListData(prevData => {
       const newData = { ...prevData };
       newData[activeTab] = [...newData[activeTab]];
@@ -77,7 +75,33 @@ export default function Home() {
     });
   };
 
-  const tableData = [
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.length > 2) {
+      const results = data.body.hits.hits.filter((hit: SearchResult) =>
+        hit._source.mark_identification.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleResultClick = (result: SearchResult) => {
+    setSelectedResult(result);
+    setSearchQuery(result._source.mark_identification);
+    setSearchResults([]);
+  };
+
+  // Filter list items based on the search query
+  const filteredListData = listData[activeTab].filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const tableData = selectedResult ? [selectedResult] : data.body.hits.hits.slice(0, 3);
+
+  /*const tableData = [
     {
       details: {
         name: 'Meta Logo',
@@ -93,7 +117,6 @@ export default function Home() {
       description: 'Computer services, Social Media, Networking, Virtual Communities, Community',
       classes: ['Class 45', 'Class 8', 'Class 8'],
     },
-    // Duplicate row data for the second row
     {
       details: {
         name: 'Meta Logo',
@@ -124,7 +147,7 @@ export default function Home() {
       description: 'Computer services, Social Media, Networking, Virtual Communities, Community',
       classes: ['Class 45', 'Class 8', 'Class 8'],
     },
-  ];
+  ];*/
 
   return (
     <div className="flex flex-col items-center">
@@ -133,10 +156,30 @@ export default function Home() {
         <Image src={logo} className="logo" alt="logo w-24" />
         <div className="search ml-14 w-[500px] h-[50px] flex justify-start items-center rounded-md border-solid border-2 border-gray-300 bg-white text-gray-500">
           <svg className="ml-4" width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18.976 20.4554L15.0377 16.5101M17.2202 11.2373C17.2202 13.2164 16.434 15.1145 15.0345 16.514C13.6351 17.9134 11.737 18.6996 9.75789 18.6996C7.77876 18.6996 5.8807 17.9134 4.48125 16.514C3.0818 15.1145 2.29559 13.2164 2.29559 11.2373C2.29559 9.25819 3.0818 7.36013 4.48125 5.96068C5.8807 4.56123 7.77876 3.77502 9.75789 3.77502C11.737 3.77502 13.6351 4.56123 15.0345 5.96068C16.434 7.36013 17.2202 9.25819 17.2202 11.2373V11.2373Z" stroke="#636363" stroke-width="1.75583" stroke-linecap="round"/>
+            <path d="M18.976 20.4554L15.0377 16.5101M17.2202 11.2373C17.2202 13.2164 16.434 15.1145 15.0345 16.514C13.6351 17.9134 11.737 18.6996 9.75789 18.6996C7.77876 18.6996 5.8807 17.9134 4.48125 16.514C3.0818 15.1145 2.29559 13.2164 2.29559 11.2373C2.29559 9.25819 3.0818 7.36013 4.48125 5.96068C5.8807 4.56123 7.77876 3.77502 9.75789 3.77502C11.737 3.77502 13.6351 4.56123 15.0345 5.96068C16.434 7.36013 17.2202 9.25819 17.2202 11.2373V11.2373Z" stroke="#636363" strokeWidth="1.75583" strokeLinecap="round" />
           </svg>
-          <input type="text" placeholder="Search Trademark Here eg. Mickey Mouse " className="searchbar h-8 border-none focus:outline-none bg-none w-[450px] " />
+          <input
+            type="text"
+            placeholder="Search Trademark Here eg. Mickey Mouse"
+            aria-label="Trademark Search"
+            className="searchbar h-8 border-none focus:outline-none bg-none w-[450px]"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
         </div>
+        {searchResults.length > 0 && (
+            <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-b-md shadow-lg z-10">
+              {searchResults.map((result) => (
+                <div
+                  key={result._id}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleResultClick(result)}
+                >
+                  {result._source.mark_identification}
+                </div>
+              ))}
+            </div>
+          )}
         <button className="ml-4 bg-blue-500 text-white rounded-md h-[50px] w-24">Search</button>
       </div>
       {/*Main*/}
@@ -174,111 +217,75 @@ export default function Home() {
         {/*Third Section*/}
         <div className="flex justify-between">
           {/*Table*/}
-          {/*<table className="w-8/12 text-center">
-            <tr className="border-solid border-b-[1px] border-gray-400">
-              <th>Mark</th>
-              <th>Details</th>
-              <th>Status</th>
-              <th>Class/Description</th>
-            </tr>
-            <tr>
-              <td className="flex h-28" rowSpan={2}>
-                <Image src={logo} className="logo" alt="logo w-16" />
-              </td>
-              <td className="">
-                <div className="mark-name">Nike</div>
-                <div className="mark-country">United States</div>
-              </td>
-              <td>
-                <div className="mark-status">Registered</div>
-                <div className="mark-date">07/12/2021</div>
-              </td>
-              <td>
-                <div className="mark-class">Class 25</div>
-                <div className="mark-desc">Clothing, footwear, headgear</div>
-              </td>
-            </tr>
-            <tr>
-              <td className="">
-                <div className="mark-name">Nike</div>
-                <div className="mark-country">United States</div>
-              </td>
-              <td>
-                <div className="mark-status">Registered</div>
-                <div className="mark-date">07/12/2021</div>
-              </td>
-              <td>
-                <div className="mark-class">Class 25</div>
-                <div className="mark-desc">Clothing, footwear, headgear</div>
-              </td>
-            </tr>
-          </table>*/}
           <table className="w-8/12 border-collapse text-center">
-          <thead>
-            <tr className="border-solid border-b-[1px] border-gray-40">
-              <th className="p-2">Mark</th>
-              <th className="p-2">Details</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">Class/Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tableData.map((row, index) => (
-              <tr key={index} className="">
-                <td className="p-2">
-                  <div className="bg-gray-200 p-4 rounded-lg w-28 h-28 flex items-center justify-center">
-                    <AlertCircle size={36} className="text-gray-500" />
-                  </div>
-                </td>
-                <td className="p-2 w-60 flex flex-col justify-between h-36">
-                  <div className="div">
-                    <div className="font-bold">{row.details.name}</div>
-                    <div className="text-sm text-gray-600">{row.details.company}</div>
-                  </div>
-                  <div className="div">
-                    <div className="text-sm">{row.details.number}</div>
-                    <div className="text-sm text-gray-500">{row.details.date}</div>
-                  </div> 
-                </td>
-                <td className="p-2 h-36">
-                  <div className="flex flex-col justify-between items-center h-36">
-                    <div className="flex flex-col">
-                      <div className="flex items-center">
-                        <span className="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
-                        <span className="text-green-500">{row.status.state}</span>
-                      </div>
-                      <div className="text-sm">on <b>{row.status.date}</b></div>
-                    </div>
-                    <div className="text-sm flex items-center font-semibold">
-                      <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      {row.status.renewalDate}
-                    </div>
-                  </div>             
-                </td>
-                <td className="p-2">
-                  <div className="flex flex-col items-center">
-                    <div>{row.description}</div>
-                    <div className="flex mt-2 items-center">
-                      {row.classes.map((cls, idx) => (
-                        <span key={idx} className=" text-gray-700 px-2 py-1 rounded-full text-xs mr-1 flex items-center">
-                          <svg width="17" height="22" viewBox="0 0 17 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M13.1289 10.1218L15.3047 5.61839L15.8339 5.87407C16.2085 6.05504 16.6589 5.89808 16.8399 5.52351C17.0208 5.14891 16.8639 4.69851 16.4893 4.51754C16.3119 4.43181 9.30265 1.04538 8.80709 0.805952C8.43252 0.624983 7.98212 0.781945 7.80115 1.15651C7.62018 1.53108 7.77714 1.98148 8.15171 2.16245L8.68093 2.41814L6.50513 6.92159C-0.456288 7.56705 -2.33925 17.1719 4.12813 20.2965C10.6042 23.4254 16.9495 15.9749 13.1289 10.1218ZM7.0169 8.39842C7.29679 8.38916 7.5484 8.22537 7.67021 7.97325L10.0374 3.07357L13.9481 4.96298L11.5809 9.86266C11.4591 10.1148 11.4872 10.4137 11.6538 10.6387C12.8302 12.2269 12.9644 13.8731 12.5923 15.2646L8.29117 13.1866C8.58073 12.4928 8.27935 11.683 7.59435 11.352L3.80026 9.51896C4.61344 8.88053 5.67642 8.44287 7.0169 8.39842ZM4.78353 18.94C1.35956 17.2857 0.87055 13.3112 2.71758 10.669L6.86988 12.6752C6.58031 13.3689 6.88169 14.1788 7.56669 14.5097L12.0157 16.6592C10.637 19.0657 7.69006 20.3443 4.78353 18.94Z" fill="#575757"/>
-                          </svg>
-
-                          {cls}
-                        </span>
-                      ))}
-                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs flex items-center">...</span>
-                    </div>
-                  </div>
-                  
-                </td>
+            <thead>
+              <tr className="border-solid border-b-[1px] border-gray-40">
+                <th className="p-2">Mark</th>
+                <th className="p-2">Details</th>
+                <th className="p-2">Status</th>
+                <th className="p-2">Class/Description</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tableData.map((row: SearchResult) => (
+                <tr key={row._id} className="">
+                  <td className="p-2">
+                    <div className="bg-gray-200 p-4 rounded-lg w-28 h-28 flex items-center justify-center">
+                    <AlertCircle size={36} className="text-gray-500" />
+                    </div>
+                  </td>
+                  <td className="p-2 w-60 flex flex-col justify-between h-36">
+                    <div className="div">
+                      <div className="font-bold">{row._source.mark_identification}</div>
+                      <div className="text-sm text-gray-600">{row._source.current_owner}</div>
+                    </div>
+                    <div className="div">
+                      <div className="text-sm">{row._source.registration_number}</div>
+                      <div className="text-sm text-gray-500">{new Date(row._source.registration_date * 1000).toLocaleDateString('en-GB')}</div>
+                    </div> 
+                  </td>
+                  <td className="p-2 h-36">
+                    <div className="flex flex-col justify-between items-center h-36">
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
+                          <span className={`h-2 w-2 ${row._source.status_code === 700 ? 'bg-green-500' : 'bg-yellow-500'} rounded-full mr-2`}></span>
+                          <span className={row._source.status_code === 700 ? 'text-green-500' : 'text-yellow-500'}>{row._source.status_type}</span>
+                        </div>
+                        <div className="text-sm">on <b>{new Date(row._source.registration_date * 1000).toLocaleDateString('en-GB')}</b></div>
+                      </div>
+                      <div className="text-sm flex items-center font-semibold">
+                        <svg className="h-4 w-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        {new Date(row._source.registration_date * 1000 + 10 * 365 * 24 * 60 * 60 * 1000).toLocaleDateString()} {/* Assuming 10 years renewal period */}
+                      </div>
+                    </div>             
+                  </td>
+                  <td className="p-2">
+                    <div className="flex flex-col items-center">
+                      <div>{row._source.mark_description_description[0].length > 200
+                            ? row._source.mark_description_description[0].slice(0, 200) + '...'
+                            : row._source.mark_description_description[0]}
+                      </div>
+                      <div className="flex mt-2 items-center">
+                        {row._source.class_codes.map((cls, idx) => (
+                          <span key={idx} className="text-gray-700 px-2 py-1 rounded-full text-xs mr-1 flex items-center font-semibold">
+                            <svg width="17" height="22" viewBox="0 0 17 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13.1289 10.1218L15.3047 5.61839L15.8339 5.87407C16.2085 6.05504 16.6589 5.89808 16.8399 5.52351C17.0208 5.14891 16.8639 4.69851 16.4893 4.51754C16.3119 4.43181 9.30265 1.04538 8.80709 0.805952C8.43252 0.624983 7.98212 0.781945 7.80115 1.15651C7.62018 1.53108 7.77714 1.98148 8.15171 2.16245L8.68093 2.41814L6.50513 6.92159C-0.456288 7.56705 -2.33925 17.1719 4.12813 20.2965C10.6042 23.4254 16.9495 15.9749 13.1289 10.1218ZM7.0169 8.39842C7.29679 8.38916 7.5484 8.22537 7.67021 7.97325L10.0374 3.07357L13.9481 4.96298L11.5809 9.86266C11.4591 10.1148 11.4872 10.4137 11.6538 10.6387C12.8302 12.2269 12.9644 13.8731 12.5923 15.2646L8.29117 13.1866C8.58073 12.4928 8.27935 11.683 7.59435 11.352L3.80026 9.51896C4.61344 8.88053 5.67642 8.44287 7.0169 8.39842ZM4.78353 18.94C1.35956 17.2857 0.87055 13.3112 2.71758 10.669L6.86988 12.6752C6.58031 13.3689 6.88169 14.1788 7.56669 14.5097L12.0157 16.6592C10.637 19.0657 7.69006 20.3443 4.78353 18.94Z" fill="#575757"/>
+                            </svg>
+                            {"class "+cls}
+                          </span>
+                        ))}
+                        {row._source.class_codes.length > 3 && (
+                          <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs flex items-center">...</span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           {/*Right Section*/}
           <div className="w-72 space-y-6 mr-16">
             {/* Status Section */}
