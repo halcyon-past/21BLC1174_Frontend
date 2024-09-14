@@ -1,8 +1,28 @@
+"use client";
 import Image from "next/image";
 import logo from "./assets/logo.svg"
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Search, Check } from 'lucide-react';
+import React, { useState } from 'react';
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState('Owners');
+  const [activeStatus, setActiveStatus] = useState('All');
+  const [activeView, setActiveView] = useState('Grid View');
+
+  const statuses = [
+    { name: 'All', color: 'bg-blue-100 text-blue-600' },
+    { name: 'Registered', color: 'bg-green-400 text-green-600' },
+    { name: 'Pending', color: 'bg-yellow-400 text-yellow-600' },
+    { name: 'Abandoned', color: 'bg-red-400 text-red-600' },
+    { name: 'Others', color: 'bg-blue-400 text-blue-600' },
+  ];
+
+  const owners = [
+    { name: 'Tesla, Inc.', checked: true },
+    { name: 'LEGALFORCE RAPC.', checked: false },
+    { name: 'SpaceX Inc.', checked: false },
+    { name: 'SpaceX Inc.', checked: false },
+  ];
   const tableData = [
     {
       details: {
@@ -206,8 +226,87 @@ export default function Home() {
           </tbody>
         </table>
           {/*Right Section*/}
-          <div className="right">
-            Hello World
+          <div className="w-72 space-y-6 mr-16">
+            {/* Status Section */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="font-bold mb-3">Status</h2>
+              <div className="flex flex-wrap gap-2">
+                {statuses.map((status) => (
+                  <button
+                    key={status.name}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      activeStatus === status.name ? 'bg-blue-100 text-gray-600 border-solid border-[1px] border-blue-400' : 'bg-none text-gray-600 border-solid border-[1px] border-gray-400'
+                    }`}
+                    onClick={() => setActiveStatus(status.name)}
+                  >
+                    {status.name !== 'All' && (
+                      <span className={`inline-block w-2 h-2 rounded-full mr-1 ${status.color.split(' ')[0]}`}></span>
+                    )}
+                    {status.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Owners Section */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex space-x-4 mb-3">
+                {['Owners', 'Law Firms', 'Attorneys'].map((tab) => (
+                  <button
+                    key={tab}
+                    className={`${
+                      activeTab === tab ? 'font-bold border-b-2 border-black' : 'text-gray-500'
+                    }`}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="relative mb-3">
+                <input
+                  type="text"
+                  placeholder="Search Owners"
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+              </div>
+              <div className="space-y-2">
+                {owners.map((owner) => (
+                  <div key={owner.name} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={owner.name}
+                      checked={owner.checked}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor={owner.name} className="ml-2 text-sm">
+                      {owner.name}
+                    </label>
+                    {owner.checked && <Check className="ml-auto text-blue-600" size={16} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Display Section */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="font-bold mb-3">Display</h2>
+              <div className="flex rounded-lg bg-gray-100 p-1">
+                {['Grid View', 'List View'].map((view) => (
+                  <button
+                    key={view}
+                    className={`flex-1 py-1 text-sm rounded-md ${
+                      activeView === view ? 'bg-white shadow' : 'text-gray-500'
+                    }`}
+                    onClick={() => setActiveView(view)}
+                  >
+                    {view}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
